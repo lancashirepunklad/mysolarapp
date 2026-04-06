@@ -3,154 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLIX Pro v4</title>
+    <title>SOLIX PRO V5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .bar-transition { transition: height 0.8s ease, background-color 0.5s ease; }
-        .y-axis-label { font-size: 8px; color: #64748b; }
+        .bar-anim { transition: height 1s ease, background-color 0.4s ease; }
+        .y-label { font-size: 9px; color: #475569; font-weight: 800; }
+        .glow-white { box-shadow: 0 0 15px rgba(255,255,255,0.4); }
+        .glow-green { box-shadow: 0 0 15px rgba(34,197,94,0.4); }
     </style>
 </head>
 <body id="bg-layer" class="bg-slate-950 text-white min-h-screen p-4 font-sans transition-colors duration-1000">
-    <div class="max-w-md mx-auto bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/5 pb-8 overflow-hidden">
+    <div class="max-w-md mx-auto bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/10 pb-8 overflow-hidden">
         
-        <div class="px-8 pt-8 pb-4 flex justify-between items-end">
+        <div class="px-8 pt-8 pb-4 flex justify-between items-start">
             <div>
-                <h1 class="text-3xl font-black tracking-tighter italic">SOLIX <span class="text-blue-500">PRO</span></h1>
-                <p class="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Grüne Aue 74 • 246° West</p>
+                <h1 class="text-3xl font-black italic tracking-tighter uppercase">SOLIX <span class="text-blue-500">PRO</span></h1>
+                <p class="text-slate-500 text-[10px] font-bold tracking-widest uppercase">Grüne Aue 74 • 1.82kWp • 246° W</p>
             </div>
-            <div class="text-right">
-                <p id="sunset-label" class="text-[9px] font-bold text-orange-500 uppercase mb-1">Sunset</p>
-                <p id="sunset-val" class="text-sm font-black">--:--</p>
+            <div class="bg-black/40 px-3 py-2 rounded-2xl border border-white/5 text-center">
+                <p class="text-[8px] font-black text-orange-500 uppercase tracking-tighter">Sunset</p>
+                <p id="sunset-val" class="text-xs font-black">--:--</p>
             </div>
         </div>
 
-        <div id="action-card" class="mx-6 my-4 p-6 rounded-3xl border transition-all duration-700 bg-slate-800/50 border-white/10 shadow-lg">
-            <p class="text-[10px] uppercase font-black tracking-[0.2em] mb-3 opacity-60">Current Recommendation</p>
-            <h2 id="action-title" class="text-3xl font-black mb-2 leading-none italic">SCANNING...</h2>
-            <p id="action-detail" class="text-sm font-medium opacity-90 leading-snug"></p>
+        <div id="action-card" class="mx-6 my-2 p-6 rounded-[2rem] border transition-all duration-700 bg-slate-800/40 border-white/10">
+            <p class="text-[9px] uppercase font-black tracking-widest mb-2 opacity-50">Current Instruction</p>
+            <h2 id="action-title" class="text-2xl font-black mb-1 leading-tight italic">LOADING...</h2>
+            <p id="action-detail" class="text-xs font-medium opacity-80 leading-relaxed"></p>
         </div>
 
-        <div class="mx-6 mt-8 p-6 rounded-3xl bg-black/40 border border-white/5 relative">
+        <div class="px-6 grid grid-cols-2 gap-3 my-4">
+            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5">
+                <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🧺 Best Wash</p>
+                <p id="washer-win" class="text-lg font-bold text-green-400">--:--</p>
+            </div>
+            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5">
+                <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🍽️ Best Dish</p>
+                <p id="dish-win" class="text-lg font-bold text-yellow-400">--:--</p>
+            </div>
+        </div>
+
+        <div class="mx-6 p-6 rounded-[2rem] bg-black/40 border border-white/5">
             <div class="flex justify-between items-center mb-8">
-                <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Yield Forecast</span>
-                <span class="text-[9px] font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md">kWh Yield</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Predicted Yield</span>
+                <span class="text-[9px] font-bold text-blue-400">kWh Axis</span>
             </div>
 
-            <div class="flex h-48 relative">
-                <div class="flex flex-col justify-between pr-3 border-r border-white/5">
-                    <span class="y-axis-label">2.0</span>
-                    <span class="y-axis-label">1.5</span>
-                    <span class="y-axis-label">1.0</span>
-                    <span class="y-axis-label">0.5</span>
-                    <span class="y-axis-label">0.0</span>
+            <div class="flex h-44 relative">
+                <div class="flex flex-col justify-between pr-3 border-r border-white/10 h-full">
+                    <span class="y-label">2.0</span>
+                    <span class="y-label">1.5</span>
+                    <span class="y-label">1.0</span>
+                    <span class="y-label">0.5</span>
+                    <span class="y-label">0.0</span>
                 </div>
                 
-                <div id="chart" class="flex-1 flex items-end justify-between pl-3 gap-1 h-full">
-                    </div>
+                <div id="chart" class="flex-1 flex items-end justify-between pl-3 gap-1 h-full"></div>
             </div>
 
-            <div id="labels" class="flex justify-between mt-4 pl-8 pr-1 text-slate-600 font-bold text-[9px]">
-                </div>
-        </div>
-
-        <div class="mt-6 px-10 text-center">
-            <p class="text-[10px] text-slate-500 font-medium">Optimization for 1820Wp Array & 5.4kWh Battery</p>
-        </div>
-    </div>
-
-    <script>
-        const CONFIG = { LAT: 52.502, LON: 13.545, DEC: 35, AZ: 66, KWP: 1.82 };
-
-        async function updateApp() {
-            try {
-                // 1. Get Environment
-                const sunRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${CONFIG.LAT}&lng=${CONFIG.LON}&formatted=0`);
-                const sunData = await sunRes.json();
-                const sunset = new Date(sunData.results.sunset);
-                document.getElementById('sunset-val').innerText = sunset.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-                // 2. Get Solar Data
-                const solRes = await fetch(`https://api.forecast.solar/estimate/${CONFIG.LAT}/${CONFIG.LON}/${CONFIG.DEC}/${CONFIG.AZ}/${CONFIG.KWP}`);
-                const solData = await solRes.json();
-                const watts = solData.result.watts;
-
-                const now = new Date();
-                const currentHour = now.getHours();
-                const chart = document.getElementById('chart');
-                const labels = document.getElementById('labels');
-                
-                chart.innerHTML = '';
-                labels.innerHTML = '';
-
-                // Filter Today only (06:00 - 21:00)
-                const todayHours = Object.entries(watts).filter(([t]) => {
-                    const d = new Date(t);
-                    return d.getDate() === now.getDate() && d.getHours() >= 6 && d.getHours() <= 21;
-                });
-
-                // Find Peak for Color Coding
-                const peakEntry = todayHours.reduce((prev, curr) => prev[1] > curr[1] ? prev : curr, [0,0]);
-                const peakH = new Date(peakEntry[0]).getHours();
-                const currentW = watts[Object.keys(watts).find(k => new Date(k).getHours() === currentHour)] || 0;
-
-                todayHours.forEach(([time, w]) => {
-                    const h = new Date(time).getHours();
-                    const isCurrent = h === currentHour;
-                    const isFuture = h > currentHour;
-                    const isPeakWindow = h >= peakH - 1 && h <= peakH + 1;
-
-                    // Bar Color Logic
-                    let barColor = "bg-slate-700/40";
-                    if (isCurrent) barColor = "bg-white shadow-[0_0_10px_rgba(255,255,255,0.3)]";
-                    else if (isFuture && isPeakWindow && w > 800) barColor = "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-                    else if (isFuture) barColor = "bg-blue-600/30";
-
-                    const bar = document.createElement('div');
-                    bar.className = `bar-transition w-full rounded-t-sm ${barColor}`;
-                    // Scale to 2.0 kWh (2000W)
-                    const heightPercent = Math.min((w / 2000) * 100, 100);
-                    bar.style.height = `${Math.max(heightPercent, 2)}%`;
-                    chart.appendChild(bar);
-
-                    const lbl = document.createElement('span');
-                    lbl.className = isCurrent ? "text-white" : "text-slate-600";
-                    lbl.innerText = h;
-                    labels.appendChild(lbl);
-                });
-
-                // 3. Recommendation Logic
-                const card = document.getElementById('action-card');
-                const title = document.getElementById('action-title');
-                const detail = document.getElementById('action-detail');
-                const body = document.getElementById('bg-layer');
-
-                if (currentW > 1300) {
-                    title.innerText = "RUN LARGE APPLIANCE";
-                    detail.innerText = `Powering ${currentW}W. Best for: Washing Machine (60°). Plenty for battery charge too.`;
-                    card.className = "mx-6 my-4 p-6 rounded-3xl border bg-emerald-900/40 border-emerald-400/50 shadow-emerald-500/10";
-                    body.className = "bg-emerald-950 text-white min-h-screen transition-all duration-1000";
-                } else if (currentW > 750) {
-                    title.innerText = "RUN LARGE APPLIANCE";
-                    detail.innerText = `Powering ${currentW}W. Best for: Dishwasher (Eco). System stable.`;
-                    card.className = "mx-6 my-4 p-6 rounded-3xl border bg-blue-900/40 border-blue-400/50 shadow-blue-500/10";
-                    body.className = "bg-slate-900 text-white min-h-screen transition-all duration-1000";
-                } else if (currentW > 300) {
-                    title.innerText = "CHARGE BATTERY";
-                    detail.innerText = `Solar yield (${currentW}W) is too low for heavy loads. Prioritize filling Solarbank Pro for tonight.`;
-                    card.className = "mx-6 my-4 p-6 rounded-3xl border bg-orange-900/20 border-orange-400/30";
-                    body.className = "bg-slate-950 text-white min-h-screen transition-all duration-1000";
-                } else {
-                    title.innerText = "WAIT";
-                    detail.innerText = currentHour < 12 ? `Sun angle too low for West panels. Peak starts around ${peakH}:00.` : "Sun is setting. Relying on battery storage.";
-                    card.className = "mx-6 my-4 p-6 rounded-3xl border bg-slate-800/50 border-white/10";
-                    body.className = "bg-slate-950 text-white min-h-screen transition-all duration-1000";
-                }
-
-            } catch (err) { console.error(err); }
-        }
-
-        updateApp();
-        setInterval(updateApp, 600000);
-    </script>
-</body>
-</html>
+            <div id="labels" class="flex justify-between mt-4 pl-10 pr-1 text-slate-600 font-black text-[9px]"></div>
+            
+            <div
