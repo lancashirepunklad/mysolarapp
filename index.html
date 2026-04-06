@@ -3,88 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLIX PRO V5.1</title>
+    <title>SOLIX PRO | Glass Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        body { background-color: #0a0c10; }
         .bar-anim { transition: height 1s ease, background-color 0.4s ease; }
-        .y-label { font-size: 9px; color: #475569; font-weight: 800; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .live-dot { animation: pulse 2s infinite; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        input[type=range] { height: 6px; -webkit-appearance: none; background: #1e293b; border-radius: 10px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; border: 3px solid #fff; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
     </style>
 </head>
-<body id="bg-layer" class="bg-slate-950 text-white min-h-screen p-4 font-sans transition-colors duration-1000">
-    <div class="max-w-md mx-auto bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/10 pb-8 overflow-hidden">
+<body class="text-white min-h-screen p-4 font-sans antialiased">
+    <div class="max-w-md mx-auto pb-10">
         
-        <div class="px-8 pt-8 pb-4 flex justify-between items-start">
-            <div>
-                <div class="flex items-center gap-2 mb-1">
-                    <div id="status-dot" class="w-2 h-2 bg-red-500 rounded-full live-dot"></div>
-                    <h1 class="text-3xl font-black italic tracking-tighter uppercase">SOLIX <span class="text-blue-500">PRO</span></h1>
-                </div>
-                <p class="text-slate-500 text-[10px] font-bold tracking-widest uppercase">Grüne Aue 74 • 1.82kWp • 246° W</p>
+        <div class="flex justify-between items-center mb-6 px-2">
+            <div class="flex items-center gap-3">
+                <div id="status-dot" class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></div>
+                <h1 class="text-2xl font-black tracking-tighter uppercase italic text-blue-500">Solix <span class="text-white text-opacity-90">Pro</span></h1>
             </div>
-            <button onclick="updateApp()" class="bg-white/5 hover:bg-white/10 p-3 rounded-2xl border border-white/10 transition-all">
-                <p id="sunset-val" class="text-xs font-black text-orange-500">REFRESH</p>
+            <button onclick="updateApp()" class="glass px-4 py-2 rounded-2xl text-[10px] font-bold tracking-widest text-slate-400">
+                SYNC <span id="sunset-val">--:--</span>
             </button>
         </div>
 
-        <div id="action-card" class="mx-6 my-2 p-6 rounded-[2rem] border transition-all duration-700 bg-slate-800/40 border-white/10 text-center">
-            <p id="action-label" class="text-[9px] uppercase font-black tracking-widest mb-2 opacity-50">Current Instruction</p>
-            <h2 id="action-title" class="text-2xl font-black mb-1 italic">WAITING...</h2>
-            <p id="action-detail" class="text-xs font-medium opacity-80 leading-relaxed">Tap the sunset/refresh box if data doesn't load.</p>
-        </div>
-
-        <div class="px-6 grid grid-cols-2 gap-3 my-4">
-            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 text-center">
-                <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🧺 Best Wash</p>
-                <p id="washer-win" class="text-lg font-bold text-green-400">--:--</p>
+        <div class="glass p-6 rounded-[2.5rem] mb-4 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em]">Battery Storage</p>
+                <span id="bat-pct" class="text-3xl font-black text-blue-400">50%</span>
             </div>
-            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 text-center">
-                <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🍽️ Best Dish</p>
-                <p id="dish-win" class="text-lg font-bold text-yellow-400">--:--</p>
+            <input type="range" id="bat-slider" min="0" max="100" value="50" oninput="updateBatteryUI()" class="w-full relative z-10">
+            <div class="flex justify-between mt-3 text-[8px] font-bold text-slate-600 uppercase tracking-widest">
+                <span>0% Empty</span>
+                <span>100% Full</span>
             </div>
         </div>
 
-        <div class="mx-6 p-6 rounded-[2rem] bg-black/40 border border-white/5">
-            <div class="flex h-44 relative">
-                <div class="flex flex-col justify-between pr-3 border-r border-white/10 h-full">
-                    <span class="y-label">2.0</span><span class="y-label">1.5</span>
-                    <span class="y-label">1.0</span><span class="y-label">0.5</span>
-                    <span class="y-label">0.0</span>
+        <div id="action-card" class="mb-4 p-8 rounded-[2.5rem] border transition-all duration-700 bg-white/5 border-white/5 shadow-2xl">
+            <h2 id="action-title" class="text-2xl font-black mb-2 italic leading-tight uppercase">UPDATING...</h2>
+            <p id="action-detail" class="text-sm font-medium opacity-60 leading-relaxed"></p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4 text-center">
+            <div class="glass p-5 rounded-[2rem]">
+                <p class="text-[9px] uppercase font-black text-slate-500 mb-1 tracking-widest">🧺 Best Wash</p>
+                <p id="washer-win" class="text-xl font-black text-white">--:--</p>
+            </div>
+            <div class="glass p-5 rounded-[2rem]">
+                <p class="text-[9px] uppercase font-black text-slate-500 mb-1 tracking-widest">🍽️ Best Dish</p>
+                <p id="dish-win" class="text-xl font-black text-white">--:--</p>
+            </div>
+        </div>
+
+        <div class="glass p-8 rounded-[3rem]">
+            <div class="flex justify-between items-center mb-8">
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Today's Forecast</span>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span class="text-[10px] font-bold text-slate-400">kWh Yield</span>
                 </div>
-                <div id="chart" class="flex-1 flex items-end justify-between pl-3 gap-1 h-full"></div>
             </div>
-            <div id="labels" class="flex justify-between mt-4 pl-10 pr-1 text-slate-600 font-black text-[9px]"></div>
-            <div id="weather-strip" class="flex justify-between mt-2 pl-10 pr-1 opacity-80"></div>
+            <div class="flex h-36 relative">
+                <div class="flex flex-col justify-between pr-4 border-r border-white/5 h-full font-bold text-[9px] text-slate-700">
+                    <span>2.0</span><span>1.0</span><span>0.0</span>
+                </div>
+                <div id="chart" class="flex-1 flex items-end justify-between pl-4 gap-1.5 h-full"></div>
+            </div>
+            <div id="labels" class="flex justify-between mt-5 pl-12 text-slate-600 font-black text-[9px]"></div>
+            <div id="weather-strip" class="flex justify-between mt-3 pl-12 opacity-60"></div>
         </div>
+
+        <p class="text-center mt-10 text-[9px] font-bold text-slate-800 tracking-[0.4em] uppercase">Grüne Aue 74 • Berlin</p>
     </div>
 
     <script>
-        const LAT = 52.502, LON = 13.545, DEC = 35, AZ = 66, KWP = 1.82;
+        const CONFIG = { LAT: 52.502, LON: 13.545, DEC: 35, AZ: 66, KWP: 1.82 };
+        let currentWatts = 0;
+        let peakHour = 15;
+
+        function updateBatteryUI() {
+            const val = document.getElementById('bat-slider').value;
+            document.getElementById('bat-pct').innerText = val + "%";
+            processLogic(val, currentWatts, peakHour);
+        }
 
         async function updateApp() {
-            const title = document.getElementById('action-title');
-            const detail = document.getElementById('action-detail');
-            const dot = document.getElementById('status-dot');
-
             try {
-                // Fetch Solar Data (Primary)
-                const solRes = await fetch(`https://api.forecast.solar/estimate/${LAT}/${LON}/${DEC}/${AZ}/${KWP}`);
+                const solRes = await fetch(`https://api.forecast.solar/estimate/${CONFIG.LAT}/${CONFIG.LON}/${CONFIG.DEC}/${CONFIG.AZ}/${CONFIG.KWP}`);
+                const sunRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${CONFIG.LAT}&lng=${CONFIG.LON}&formatted=0`);
                 
-                if (solRes.status === 429) {
-                    title.innerText = "RATE LIMITED";
-                    detail.innerText = "Too many refreshes. The free API allows 12 per hour. Please wait 15 minutes.";
-                    return;
-                }
-
                 const solData = await solRes.json();
+                const sunData = await sunRes.json();
                 const watts = solData.result.watts;
+                const sunset = new Date(sunData.results.sunset);
                 const now = new Date();
                 const currentH = now.getHours();
-                
-                dot.className = "w-2 h-2 bg-green-500 rounded-full live-dot";
 
-                // Setup Chart
+                document.getElementById('sunset-val').innerText = sunset.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
                 const chart = document.getElementById('chart'), labels = document.getElementById('labels'), strip = document.getElementById('weather-strip');
                 chart.innerHTML = ''; labels.innerHTML = ''; strip.innerHTML = '';
 
@@ -94,19 +109,19 @@
                 });
 
                 const peakE = todayHours.reduce((p, c) => p[1] > c[1] ? p : c, [0,0]);
-                const peakH = new Date(peakE[0]).getHours();
-                const currentW = watts[Object.keys(watts).find(k => new Date(k).getHours() === currentH)] || 0;
+                peakHour = new Date(peakE[0]).getHours();
+                currentWatts = watts[Object.keys(watts).find(k => new Date(k).getHours() === currentH)] || 0;
 
                 todayHours.forEach(([t, w]) => {
                     const h = new Date(t).getHours();
                     const isNow = h === currentH;
-                    let color = h > currentH ? "bg-blue-600/30" : "bg-slate-700/20";
-                    if (isNow) color = "bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]";
-                    else if (h > currentH && h >= peakH - 1 && h <= peakH + 1 && w > 800) color = "bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.3)]";
+                    let color = h > currentH ? "bg-blue-600/20" : "bg-white/5";
+                    if (isNow) color = "bg-white shadow-[0_0_20px_rgba(255,255,255,0.2)]";
+                    else if (h > currentH && h >= peakHour - 1 && h <= peakHour + 1 && w > 800) color = "bg-emerald-500/80";
 
                     const bar = document.createElement('div');
-                    bar.className = `bar-anim w-full rounded-t-sm ${color}`;
-                    bar.style.height = `${Math.max((w/2000)*100, 4)}%`;
+                    bar.className = `bar-anim w-full rounded-t-lg ${color}`;
+                    bar.style.height = `${Math.max((w/2000)*100, 5)}%`;
                     chart.appendChild(bar);
 
                     const lbl = document.createElement('span');
@@ -116,32 +131,40 @@
 
                     const icon = document.createElement('span');
                     icon.className = "text-[10px]";
-                    icon.innerText = w > 1300 ? '☀️' : w > 600 ? '⛅' : '☁️';
+                    icon.innerText = w > 1400 ? '☀️' : w > 600 ? '⛅' : '☁️';
                     strip.appendChild(icon);
                 });
 
-                // Set Advice
-                if (currentW > 1200) {
-                    title.innerText = "RUN LARGE APPLIANCE";
-                    detail.innerText = `Power is high (${currentW}W). Perfect for Washing Machine + Battery Charge.`;
-                    document.getElementById('action-card').className = "mx-6 my-2 p-6 rounded-[2rem] border bg-emerald-900/40 border-emerald-400/50";
-                } else if (currentW > 700) {
-                    title.innerText = "RUN DISHWASHER";
-                    detail.innerText = `Moderate power (${currentW}W). Eco-mode dishwasher is safe now.`;
-                    document.getElementById('action-card').className = "mx-6 my-2 p-6 rounded-[2rem] border bg-blue-900/40 border-blue-400/50";
-                } else {
-                    title.innerText = currentH < 12 ? "WAIT FOR PEAK" : "CHARGE BATTERY";
-                    detail.innerText = `Current yield (${currentW}W) is low. Let the Solarbank Pro soak up the energy.`;
-                    document.getElementById('action-card').className = "mx-6 my-2 p-6 rounded-[2rem] border bg-slate-800/40 border-white/10";
-                }
+                updateBatteryUI();
 
-                document.getElementById('washer-win').innerText = `${peakH}:00`;
-                document.getElementById('dish-win').innerText = `${peakH - 1}:00`;
+            } catch (err) { console.error(err); }
+        }
 
-            } catch (err) {
-                title.innerText = "API BUSY";
-                detail.innerText = "Wait 60s and tap Refresh. If on mobile, ensure you have a data connection.";
+        function processLogic(battery, sun, peak) {
+            const card = document.getElementById('action-card');
+            const title = document.getElementById('action-title');
+            const detail = document.getElementById('action-detail');
+
+            if (battery < 25) {
+                title.innerText = "CRITICAL CHARGE";
+                detail.innerText = "Battery low. Suspend large appliances to allow Solarbank recovery.";
+                card.className = "mb-4 p-8 rounded-[2.5rem] border bg-red-900/30 border-red-500/40";
+            } else if (sun > 1300) {
+                title.innerText = "RUN LARGE LOADS";
+                detail.innerText = `Power is high (${sun}W). Best window for laundry or heavy appliances.`;
+                card.className = "mb-4 p-8 rounded-[2.5rem] border bg-emerald-900/30 border-emerald-500/40";
+            } else if (sun > 750) {
+                title.innerText = "OPTIMAL WINDOW";
+                detail.innerText = "System stable. Safe for dishwasher or light chores.";
+                card.className = "mb-4 p-8 rounded-[2.5rem] border bg-blue-900/30 border-blue-500/40";
+            } else {
+                title.innerText = "CHARGE BATTERY";
+                detail.innerText = "Yield is low. Focus on storing energy for evening use.";
+                card.className = "mb-4 p-8 rounded-[2.5rem] border bg-white/5 border-white/5";
             }
+
+            document.getElementById('washer-win').innerText = `${peak}:00`;
+            document.getElementById('dish-win').innerText = `${peak - 1}:00`;
         }
 
         updateApp();
