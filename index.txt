@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOLIX Pro Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bar-container { transition: all 0.5s ease; }
+        .peak-glow { box-shadow: 0 0 15px rgba(74, 222, 128, 0.4); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .live-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body id="bg-layer" class="bg-slate-900 text-white min-h-screen p-4 font-sans transition-colors duration-1000">
+    <div class="max-w-md mx-auto bg-slate-800/90 backdrop-blur-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/10 pb-8">
+        
+        <div class="px-6 pt-6 pb-2 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-400 rounded-full live-dot"></div>
+                <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">System Live</span>
+            </div>
+            <span id="sunset-time" class="text-[10px] font-bold text-orange-400 uppercase">Sunset: --:--</span>
+        </div>
+
+        <div class="px-6 py-2">
+            <h1 class="text-3xl font-black italic tracking-tighter italic">SOLIX <span class="text-blue-400">PRO</span></h1>
+            <p class="text-slate-400 text-[10px] uppercase tracking-widest">Grüne Aue 74 • 1.82kWp • 246° W</p>
+        </div>
+
+        <div id="advice-card" class="m-4 p-6 rounded-3xl text-center border transition-all duration-700 bg-slate-700/40 border-white/10 shadow-xl">
+            <div id="weather-icon" class="text-5xl mb-3">☀️</div>
+            <p id="main-status" class="text-2xl font-black mb-1 leading-none">Scanning Skies...</p>
+            <p id="sub-advice" class="text-sm opacity-80 italic font-medium"></p>
+        </div>
+
+        <div class="px-4 grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
+                <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🧺 Best Wash</p>
+                <p id="washer-window" class="text-lg font-bold text-green-400">--:--</p>
+            </div>
+            <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
+                <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🍽️ Best Dish</p>
+                <p id="dishwasher-window" class="text-lg font-bold text-yellow-400">--:--</p>
+            </div>
+        </div>
+
+        <div class="mx-4 p-5 rounded-3xl bg-black/30 border border-white/5">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Hourly Projection</h3>
+                <span class="text-[10px] text-blue-400 font-bold">Watts (W)</span>
+            </div>
+            
+            <div id="chart" class="flex items-end justify-between h-32 gap-1 px-1">
+                </div>
+            <div id="labels" class="flex justify-between mt-3 px-1 border-t border-white/5 pt-2">
+                </div>
+        </div>
+
+        <div id="weather-strip" class="mx-4 mt-3 flex justify-between px-2">
+            </div>
+    </div>
+
+    <script>
+        const LAT = 52.502;
+        const LON = 13.545;
+        const DEC = 35;
+        const AZ = 66; // 246° W
+        const KWP = 1.82; 
+
+        async function updateApp() {
+            try {
+                // Fetch Solar & Sunset Data
+                const sunRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${LAT}&lng=${LON}&formatted=0`);
+                const sunData = await sunRes.json();
+                const sunset = new Date(sunData.results.sunset);
+                document.getElementById('sunset-time').innerText = `Sunset: ${sunset.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+
+                const solRes = await fetch(`https://api.forecast.solar/estimate/${LAT}/${LON}/${DEC}/${AZ}/${KWP}`);
+                const solData = await solRes.json();
+                const watts = solData.result.watts;
+                
+                const now = new Date();
+                const currentHour = now.getHours();
+
+                // Filter 06:00 to 21:00
+                const hours = Object.entries(watts).filter(([t]) => {
+                    const h = new Date(t).getHours();
+                    return h >= 6 && h <= 21;
+                });
+
+                const maxW = Math.max(...hours.map(e => e[1]));
+                const chart = document.getElementById('chart');
+                const labels = document.getElementById('labels');
+                const strip = document.getElementById('weather-strip');
+                
+                chart.innerHTML = '';
+                labels.innerHTML = '';
+                strip.innerHTML = '';
+
+                hours.forEach(([time, w]) => {
+                    const h = new Date(time).getHours();
+                    const isCurrent = h === currentHour;
+
+                    // 1. Chart Bars
+                    const bar = document.createElement('div');
+                    bar.className = `bar-container w-full rounded-t-lg ${isCurrent ? 'bg-white' : 'bg-blue-600/50'}`;
+                    bar.style.height = `${Math.max((w / maxW) * 100, 2)}%`;
+                    if (w === maxW && w > 0) bar.classList.add('bg-yellow-400', 'peak-glow');
+                    chart.appendChild(bar);
+
+                    // 2. Hour Labels
+                    const lbl = document.createElement('span');
+                    lbl.className = `text-[9px] font-bold ${isCurrent ? 'text-white' : 'text-slate-600'}`;
+                    lbl.innerText = h;
+                    labels.appendChild(lbl);
+
+                    // 3. Mini Weather Strip (Heuristic based on expected clear-sky vs predicted)
+                    const icon = document.createElement('span');
+                    icon.className = "text-[10px]";
+                    icon.innerText = w > 1000 ? '☀️' : w > 400 ? '⛅' : '☁️';
+                    strip.appendChild(icon);
+                });
+
+                // 4. Update Advice Card Logic
+                const currentWatt = watts[Object.keys(watts).find(k => new Date(k).getHours() === currentHour)] || 0;
+                const card = document.getElementById('advice-card');
+                const main = document.getElementById('main-status');
+                const sub = document.getElementById('sub-advice');
+                const body = document.getElementById('bg-layer');
+                const wIcon = document.getElementById('weather-icon');
+
+                const peakEntry = hours.reduce((prev, curr) => prev[1] > curr[1] ? prev : curr);
+                const peakH = new Date(peakEntry[0]).getHours();
+
+                if (currentWatt > 1300) {
+                    body.className = "bg-emerald-950 text-white min-h-screen p-4 transition-all duration-1000";
+                    card.className = "m-4 p-6 rounded-3xl text-center border bg-emerald-900/40 border-emerald-400/50 shadow-2xl shadow-emerald-500/20";
+                    main.innerText = "MAX POWER";
+                    wIcon.innerText = "☀️";
+                    sub.innerText = "Solarbank Pro is gorging! Run everything now.";
+                } else if (currentHour >= peakH - 2 && currentHour <= peakH + 1 && currentWatt > 500) {
+                    body.className = "bg-blue-950 text-white min-h-screen p-4 transition-all duration-1000";
+                    card.className = "m-4 p-6 rounded-3xl text-center border bg-blue-900/40 border-blue-400/50";
+                    main.innerText = "PRIME WINDOW";
+                    wIcon.innerText = "⛅";
+                    sub.innerText = "Your West panels are peaking. Ideal for laundry.";
+                } else {
+                    body.className = "bg-slate-950 text-white min-h-screen p-4 transition-all duration-1000";
+                    card.className = "m-4 p-6 rounded-3xl text-center border bg-white/5 border-white/10";
+                    main.innerText = "REST MODE";
+                    wIcon.innerText = currentHour > sunset.getHours() ? "🌙" : "☁️";
+                    sub.innerText = currentHour > sunset.getHours() ? "Running on Battery Storage." : "Wait for the afternoon peak.";
+                }
+
+                document.getElementById('washer-window').innerText = `${peakH}:00`;
+                document.getElementById('dishwasher-window').innerText = `${peakH + 1}:00`;
+
+            } catch (err) {
+                document.getElementById('main-status').innerText = "OFFLINE";
+            }
+        }
+
+        updateApp();
+        setInterval(updateApp, 600000);
+    </script>
+</body>
+</html>
