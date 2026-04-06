@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLIX PRO V5</title>
+    <title>SOLIX PRO V5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bar-anim { transition: height 1s ease, background-color 0.4s ease; }
         .y-label { font-size: 9px; color: #475569; font-weight: 800; }
-        .glow-white { box-shadow: 0 0 15px rgba(255,255,255,0.4); }
-        .glow-green { box-shadow: 0 0 15px rgba(34,197,94,0.4); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .live-dot { animation: pulse 2s infinite; }
     </style>
 </head>
 <body id="bg-layer" class="bg-slate-950 text-white min-h-screen p-4 font-sans transition-colors duration-1000">
@@ -17,50 +17,134 @@
         
         <div class="px-8 pt-8 pb-4 flex justify-between items-start">
             <div>
-                <h1 class="text-3xl font-black italic tracking-tighter uppercase">SOLIX <span class="text-blue-500">PRO</span></h1>
+                <div class="flex items-center gap-2 mb-1">
+                    <div id="status-dot" class="w-2 h-2 bg-red-500 rounded-full live-dot"></div>
+                    <h1 class="text-3xl font-black italic tracking-tighter uppercase">SOLIX <span class="text-blue-500">PRO</span></h1>
+                </div>
                 <p class="text-slate-500 text-[10px] font-bold tracking-widest uppercase">Grüne Aue 74 • 1.82kWp • 246° W</p>
             </div>
-            <div class="bg-black/40 px-3 py-2 rounded-2xl border border-white/5 text-center">
-                <p class="text-[8px] font-black text-orange-500 uppercase tracking-tighter">Sunset</p>
-                <p id="sunset-val" class="text-xs font-black">--:--</p>
-            </div>
+            <button onclick="updateApp()" class="bg-white/5 hover:bg-white/10 p-3 rounded-2xl border border-white/10 transition-all">
+                <p id="sunset-val" class="text-xs font-black text-orange-500">REFRESH</p>
+            </button>
         </div>
 
-        <div id="action-card" class="mx-6 my-2 p-6 rounded-[2rem] border transition-all duration-700 bg-slate-800/40 border-white/10">
-            <p class="text-[9px] uppercase font-black tracking-widest mb-2 opacity-50">Current Instruction</p>
-            <h2 id="action-title" class="text-2xl font-black mb-1 leading-tight italic">LOADING...</h2>
-            <p id="action-detail" class="text-xs font-medium opacity-80 leading-relaxed"></p>
+        <div id="action-card" class="mx-6 my-2 p-6 rounded-[2rem] border transition-all duration-700 bg-slate-800/40 border-white/10 text-center">
+            <p id="action-label" class="text-[9px] uppercase font-black tracking-widest mb-2 opacity-50">Current Instruction</p>
+            <h2 id="action-title" class="text-2xl font-black mb-1 italic">WAITING...</h2>
+            <p id="action-detail" class="text-xs font-medium opacity-80 leading-relaxed">Tap the sunset/refresh box if data doesn't load.</p>
         </div>
 
         <div class="px-6 grid grid-cols-2 gap-3 my-4">
-            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5">
+            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 text-center">
                 <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🧺 Best Wash</p>
                 <p id="washer-win" class="text-lg font-bold text-green-400">--:--</p>
             </div>
-            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5">
+            <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 text-center">
                 <p class="text-[9px] uppercase font-black text-slate-500 mb-1">🍽️ Best Dish</p>
                 <p id="dish-win" class="text-lg font-bold text-yellow-400">--:--</p>
             </div>
         </div>
 
         <div class="mx-6 p-6 rounded-[2rem] bg-black/40 border border-white/5">
-            <div class="flex justify-between items-center mb-8">
-                <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Predicted Yield</span>
-                <span class="text-[9px] font-bold text-blue-400">kWh Axis</span>
-            </div>
-
             <div class="flex h-44 relative">
                 <div class="flex flex-col justify-between pr-3 border-r border-white/10 h-full">
-                    <span class="y-label">2.0</span>
-                    <span class="y-label">1.5</span>
-                    <span class="y-label">1.0</span>
-                    <span class="y-label">0.5</span>
+                    <span class="y-label">2.0</span><span class="y-label">1.5</span>
+                    <span class="y-label">1.0</span><span class="y-label">0.5</span>
                     <span class="y-label">0.0</span>
                 </div>
-                
                 <div id="chart" class="flex-1 flex items-end justify-between pl-3 gap-1 h-full"></div>
             </div>
-
             <div id="labels" class="flex justify-between mt-4 pl-10 pr-1 text-slate-600 font-black text-[9px]"></div>
-            
-            <div
+            <div id="weather-strip" class="flex justify-between mt-2 pl-10 pr-1 opacity-80"></div>
+        </div>
+    </div>
+
+    <script>
+        const LAT = 52.502, LON = 13.545, DEC = 35, AZ = 66, KWP = 1.82;
+
+        async function updateApp() {
+            const title = document.getElementById('action-title');
+            const detail = document.getElementById('action-detail');
+            const dot = document.getElementById('status-dot');
+
+            try {
+                // Fetch Solar Data (Primary)
+                const solRes = await fetch(`https://api.forecast.solar/estimate/${LAT}/${LON}/${DEC}/${AZ}/${KWP}`);
+                
+                if (solRes.status === 429) {
+                    title.innerText = "RATE LIMITED";
+                    detail.innerText = "Too many refreshes. The free API allows 12 per hour. Please wait 15 minutes.";
+                    return;
+                }
+
+                const solData = await solRes.json();
+                const watts = solData.result.watts;
+                const now = new Date();
+                const currentH = now.getHours();
+                
+                dot.className = "w-2 h-2 bg-green-500 rounded-full live-dot";
+
+                // Setup Chart
+                const chart = document.getElementById('chart'), labels = document.getElementById('labels'), strip = document.getElementById('weather-strip');
+                chart.innerHTML = ''; labels.innerHTML = ''; strip.innerHTML = '';
+
+                const todayHours = Object.entries(watts).filter(([t]) => {
+                    const d = new Date(t);
+                    return d.getDate() === now.getDate() && d.getHours() >= 6 && d.getHours() <= 21;
+                });
+
+                const peakE = todayHours.reduce((p, c) => p[1] > c[1] ? p : c, [0,0]);
+                const peakH = new Date(peakE[0]).getHours();
+                const currentW = watts[Object.keys(watts).find(k => new Date(k).getHours() === currentH)] || 0;
+
+                todayHours.forEach(([t, w]) => {
+                    const h = new Date(t).getHours();
+                    const isNow = h === currentH;
+                    let color = h > currentH ? "bg-blue-600/30" : "bg-slate-700/20";
+                    if (isNow) color = "bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]";
+                    else if (h > currentH && h >= peakH - 1 && h <= peakH + 1 && w > 800) color = "bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.3)]";
+
+                    const bar = document.createElement('div');
+                    bar.className = `bar-anim w-full rounded-t-sm ${color}`;
+                    bar.style.height = `${Math.max((w/2000)*100, 4)}%`;
+                    chart.appendChild(bar);
+
+                    const lbl = document.createElement('span');
+                    lbl.className = isNow ? "text-white" : "";
+                    lbl.innerText = h;
+                    labels.appendChild(lbl);
+
+                    const icon = document.createElement('span');
+                    icon.className = "text-[10px]";
+                    icon.innerText = w > 1300 ? '☀️' : w > 600 ? '⛅' : '☁️';
+                    strip.appendChild(icon);
+                });
+
+                // Set Advice
+                if (currentW > 1200) {
+                    title.innerText = "RUN LARGE APPLIANCE";
+                    detail.innerText = `Power is high (${currentW}W). Perfect for Washing Machine + Battery Charge.`;
+                    document.getElementById('action-card').className = "mx-6 my-2 p-6 rounded-[2rem] border bg-emerald-900/40 border-emerald-400/50";
+                } else if (currentW > 700) {
+                    title.innerText = "RUN DISHWASHER";
+                    detail.innerText = `Moderate power (${currentW}W). Eco-mode dishwasher is safe now.`;
+                    document.getElementById('action-card').className = "mx-6 my-2 p-6 rounded-[2rem] border bg-blue-900/40 border-blue-400/50";
+                } else {
+                    title.innerText = currentH < 12 ? "WAIT FOR PEAK" : "CHARGE BATTERY";
+                    detail.innerText = `Current yield (${currentW}W) is low. Let the Solarbank Pro soak up the energy.`;
+                    document.getElementById('action-card').className = "mx-6 my-2 p-6 rounded-[2rem] border bg-slate-800/40 border-white/10";
+                }
+
+                document.getElementById('washer-win').innerText = `${peakH}:00`;
+                document.getElementById('dish-win').innerText = `${peakH - 1}:00`;
+
+            } catch (err) {
+                title.innerText = "API BUSY";
+                detail.innerText = "Wait 60s and tap Refresh. If on mobile, ensure you have a data connection.";
+            }
+        }
+
+        updateApp();
+    </script>
+</body>
+</html>
